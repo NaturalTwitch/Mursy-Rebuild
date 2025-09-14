@@ -1,56 +1,55 @@
-const { useMainPlayer, QueryType } = require('discord-player');
-const urlVerifier = require('../../Modules/urlVerifier.js')
+const { useMainPlayer, QueryType } = require("discord-player");
+const urlVerifier = require("../../Modules/urlVerifier.js");
+
+const { Track } = require("../../Modules/track.js");
+const { getQueue } = require("../../Modules/queue.js");
+
 
 module.exports = {
-    name: 'play',
-    aliases: ['p'],
-    description: "Play a song in your Voice Channel - **Supports Spotify Only!**",
-    utilisation: '{prefix}play [song name/url]',
-    voiceChannel: true,
+  name: "play",
+  aliases: ["p"],
+  description: "Play a song in your Voice Channel - **Supports Youtube Only!**",
+  utilisation: "{prefix}play [song name/url]",
+  voiceChannel: true,
 
-    async execute(client, message, cmd, args, Discord) {
-        if (!args[0]) return message.channel.send(`${message.author}, Write the name of the music you want to search.`);
+  async execute(client, message, cmd, args, Discord) {
+    const url = args.join(" ");
+    if (!args.length)
+      return message.channel.send(
+        `${message.author}, Please provide a song name or url to play! ❌`
+      );
 
-        const player = useMainPlayer();
-        const voiceChannel = message.member.voice.channel;
-        if (!voiceChannel) return message.channel.send(`${message.author}, You are not connected to a voice channel.`)
+    const vc = message.member?.voice?.channel;
+    if (!vc)
+      return message.channel.send(
+        `${message.author}, You need to be in a Voice Channel to play a song! ❌`
+      );
 
-        let queryType = QueryType.SPOTIFY_SEARCH;
-        const urlType = urlVerifier(args[0]);
+    const queue = getQueue(message.guild);
 
-        if (urlType) {
-            console.log(`URL detected: ${urlType}`);
-            if (urlType === 'SPOTIFY_TRACK') {
-                queryType = QueryType.SPOTIFY_SONG;
-            } else if (urlType === 'SPOTIFY_PLAYLIST') {
-                queryType = QueryType.SPOTIFY_PLAYLIST
-            } else {
-                return message.channel.send(`${message.author}, Unsupported URL platform.`);
-            }
-        }
-
-        const searchResult = await player.search(args.join(' '), {
-            requestedBy: message.member.user,
-            searchEngine: queryType
-        });
-
-        if (!searchResult.hasTracks()) return message.channel.send(`${message.author}, No results found!`);
-
-        try {
-            await player.play(voiceChannel, searchResult, {
-                nodeOptions: {
-                    metadata: {
-                        channel: message.channel,
-                        client: client.user.id,
-                        requestedBy: message.author,
-                        guildId: message.guild.id
-                    }
-                }
-            });
-        } catch (e) {
-            console.log(`${searchResult}` + e)
-            message.channel.send(`${message.author}, An error occurred while playing the track.`);
-            message.channel.send(`${e.stack}`)
-        }
+    if (!queue) {
+      const join = joinVoiceChannel({
+        channelId: voiceChannel.id,
+        guildId: voiceChannel.guild.id,
+        adapterCreator: voiceChannel.guild.voiceAdapterCreator,
+      });
     }
-}
+
+    try {
+      await queue.connect(vc);
+
+      // const input = url.startsWith("http") ? url : `ytsearch1${url}`;
+      const track = await Track.fromUrl(url, message.guild.id);
+      const pos = await queue.enqueue(track);
+
+      message.reply(
+        `🎶 | **${track.title}** has been added to the queue! (Position: ${pos})`
+      );
+    } catch (error) {
+      console.error(error);
+      message.channel.send(
+        `${message.author}, There was an error trying to play the song ❌`
+      );
+    }
+  },
+};

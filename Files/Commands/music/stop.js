@@ -1,14 +1,20 @@
-module.exports = {
-    name: 'stop',
-    aliases: ['st'],
-    description: "Stop all music playback",
-    utilisation: '{prefix}stop',
-    voiceChannel: true,
-    async execute(client, message, cmd, args, Discord) {
-        const queue = client.player.nodes.get(message.guild.id);
+const { getQueue } = require("../../Modules/queue.js");
 
-        if (!queue || !queue.node.isPlaying()) return message.channel.send(`${message.author}, There is no music currently playing!`);
-        queue.delete();
-        message.channel.send(`Ending Playback, Clearing Queue, Leaving Voice Channel!`)
-    }
-}
+module.exports = {
+  name: "stop",
+  aliases: ["st"],
+  description: "Stop all music playback",
+  utilisation: "{prefix}stop",
+  voiceChannel: true,
+  async execute(client, message, cmd, args, Discord) {
+    const queue = getQueue(message.guild);
+    if (!queue)
+      return message.channel.send(
+        `${message.author}, There is no music playing! ❌`
+      );
+    queue.stop();
+    message.channel.send(
+      `🛑 | Music playback has been stopped and the queue has been cleared!`
+    );
+  },
+};
