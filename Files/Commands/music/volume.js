@@ -1,20 +1,22 @@
+const { getQueue } = require("../../Modules/queue.js");
+
 module.exports = {
     name: 'volume',
     aliases: ['vol'],
     description: "Sets volume of the bot.",
     howTo: ".volume [1-100]",
     async execute(client, message, cmd, args, Discord) {
-        const queue = client.player.nodes.get(message.guild.id);
+        const queue = getQueue(message.guild);
 
         const vol = Number(args[0]);
 
         // Check for no music playing or invalid input
-        if (!queue || !queue.node.isPlaying()) return message.channel.send(`${message.author}, There is no music currently playing!. ❌`);
+        if (!queue) return message.channel.send(`${message.author}, There is no music currently playing!. ❌`);
         if (!vol || vol === NaN) return message.channel.send(`${message.author} Please ensure you select a valid number.`);
         if (vol < 1 || vol > 100) return message.channel.send(`${message.author} You can only set volume between 1% & 100%`);
 
         // Set volume and save to the database
-        const success = queue.node.setVolume(vol);
+        const success = queue.setVolume(vol);
         client.db.query(`
             INSERT INTO volume (guild_id, volume_percentage) 
             VALUES ($1, $2)
