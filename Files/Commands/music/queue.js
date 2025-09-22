@@ -1,32 +1,76 @@
-const { EmbedBuilder } = require('discord.js')
+// Files/Commands/music/queue.js
+const { EmbedBuilder } = require('discord.js');
+const { getQueue } = require('../../Modules/queue.js'); // adjust path if needed
+
+// small helpers (match those in your queue for formatting)
+function pad(n) { return String(n).padStart(2, '0'); }
+function fmtTime(totalSec = 0) {
+  totalSec = Math.max(0, Math.floor(totalSec));
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
 
 module.exports = {
-    name: 'queue',
-    aliases: ['qu'],
-    description: "View all songs in your queue",
-    utilisation: '{prefix}queue',
-    voiceChannel: true,
+  name: 'queue',
+  aliases: ['qu', 'progress'],
+  description: 'View all songs in your queue',
+  utilisation: '{prefix}queue',
+  voiceChannel: true,
 
-    async execute(client, message, cmd, args, Discord) {
-        try {
-            const queue = client.player.nodes.get(message.guild.id);
+  async execute(client, message) {
+    try {
+      const queue = getQueue(message.guild);
 
-            if (!queue || !queue.node.isPlaying()) return message.channel.send(`${message.author}, there is no music playing currently!`);
-            if (!queue.tracks) return message.channel.send(`Queue is Empty, add more songs with the play command.`)
-            const tracks = queue.tracks.map((track, i) => `**${i + 1}** - ${track.title} | ${track.author} (Requested by ${queue.metadata.requestedBy})`);
-            const songs = queue.tracks.size;
-            const nextSongs = songs > 5 ? `And **${songs - 5}** Other Song...` : `There are **${songs}** Songs in the List.`;
+      const isPlaying = !!queue.current;
+      const hasUpcoming = queue.tracks.length > 0;
 
-            const embed = new EmbedBuilder()
-                .setThumbnail(message.guild.iconURL({ size: 2048, dynamic: true }))
-                .setTitle(`Server Music List - ${message.guild.name}`)
-                .setDescription(`Currently Playing: \`${queue.currentTrack.title}\`\n\n${tracks.slice(0, 5).join('\n')}\n\n${nextSongs}`)
-                .setTimestamp()
-                .setFooter({ text: `requested by: ${message.author.tag}` });
+      if (!isPlaying && !hasUpcoming) {
+        return message.channel.send(`${message.author}, there is no music playing currently!`);
+      }
 
-            message.channel.send({ embeds: [embed] })
-        } catch (e) {
-            console.log(e)
-        }
+      // Build "Up Next" list
+      const lines = queue.tracks.map((t, i) => {
+        const dur = Number.isFinite(t.duration) ? `\`${fmtTime(t.duration)}\`` : '`LIVE`';
+        const by  = t.author || t.channel || ''; // only if you store a channel/author name
+        const req = t.requestedBy?.tag || t.requestedBy?.username || t.requestedBy || '';
+        const meta = [by && by.trim(), req && `req: ${req}`].filter(Boolean).join(' • ');
+        return `**${i + 1}.** [${t.title || 'Unknown Title'}](${t.url || '#'}) ${dur}${meta ? ` — ${meta}` : ''}`;
+      });
+
+      const shown = 10;
+      const extraCount = Math.max(0, queue.tracks.length - shown);
+
+      const embed = new EmbedBuilder()
+        .setTitle(`Server Queue — ${message.guild.name}`)
+        .setThumbnail(message.guild.iconURL({ size: 256 }))
+        .setColor(0x00ae86)
+        .setTimestamp();
+
+      if (isPlaying) {
+        const np = queue.getNowPlaying(24); // { title, url, bar, label, thumbnail, duration, position }
+        embed.addFields(
+          { name: 'Now Playing', value: `[${np.title}](${np.url})` },
+          { name: 'Progress', value: `${np.bar}  ${np.label}`, inline: false }
+        );
+        if (np.thumbnail) embed.setImage(np.thumbnail);
+      }
+
+      embed.addFields({
+        name: `Up Next (${queue.tracks.length})`,
+        value: lines.slice(0, shown).join('\n') || '—',
+      });
+
+      const footerBits = [];
+      if (extraCount > 0) footerBits.push(`…and ${extraCount} more`);
+      footerBits.push(`requested by: ${message.author.tag}`);
+      embed.setFooter({ text: footerBits.join(' • ') });
+
+      return message.channel.send({ embeds: [embed] });
+    } catch (e) {
+      console.error(e);
+      return message.channel.send('⚠️ Could not show the queue right now.');
     }
-}
+  }
+};
