@@ -42,16 +42,17 @@ for (const folder of commandFolders) {
 //Slash Command Handler
 client.slashCommands = new Discord.Collection();
 const commandFolder = fs.readdirSync("./Files/SlashCommands");
+
 for (const folder of commandFolder) {
   if (folder.endsWith(".js")) {
     const command = require(`../SlashCommands/${folder}`);
-    client.slashCommands.set(command.name, command);
+    client.slashCommands.set(command.data.name, command); // 👈 use data.name
   } else {
     const commandFile = fs.readdirSync(`./Files/SlashCommands/${folder}`);
     for (const file of commandFile) {
       const command = require(`../SlashCommands/${folder}/${file}`);
       command.category = folder;
-      client.slashCommands.set(command.name, command);
+      client.slashCommands.set(command.data.name, command); // 👈 use data.name
     }
   }
 }
@@ -125,13 +126,38 @@ client.login(process.env.DISCORD_TOKEN);
 
 const { attachClient } = require("../../Files/Modules/queue.js");
 
-client.on("clientReady", async () => {
+const { REST, Routes } = require("discord.js");
+
+client.once("clientReady", async () => {
   attachClient(client);
   console.log(`Logged in as ${client.user.tag}`);
+
+  const rest = new REST({ version: "10" }).setToken(process.env.DISCORD_TOKEN);
+  const commands = client.slashCommands.map((cmd) => cmd.data.toJSON());
+
+  try {
+    console.log(`Started refreshing ${commands.length} slash commands.`);
+    await rest.put(Routes.applicationCommands(client.user.id), {
+      body: commands,
+    });
+    console.log("Successfully reloaded slash commands.");
+  } catch (err) {
+    console.error(err);
+  }
+
+  let channel = client.channels.cache.find(
+    (x) => x.id === "934287269228081172"
+  );
+
+  channel.setName(`Currently ${client.guilds.cache.size} Servers`);
+
+  setInterval(function () {
+    channel.setName(`Currently ${client.guilds.cache.size} Servers`);
+  }, 300000);
+
   client.user.setActivity("Coming Back Soon!!! Under Massive Rebuild", {
     type: Discord.ActivityType.Custom,
   });
 });
-
 
 module.exports = { client };
