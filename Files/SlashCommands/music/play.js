@@ -59,7 +59,7 @@ module.exports = {
     if (!vc) {
       return interaction.reply({
         content: `You need to be in a voice channel to play music. ❌`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -67,7 +67,7 @@ module.exports = {
     if (!queue) {
       return interaction.reply({
         content: `Music system isn’t initialized for this guild yet. ❌`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -91,7 +91,7 @@ module.exports = {
       } else {
         await interaction.reply({
           content: `There was an error trying to play that track. ❌`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
     }

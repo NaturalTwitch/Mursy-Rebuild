@@ -36,7 +36,7 @@ module.exports = {
       if (!vc) {
         return interaction.reply({
           content: `You need to be in a voice channel to use this. ❌`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
 

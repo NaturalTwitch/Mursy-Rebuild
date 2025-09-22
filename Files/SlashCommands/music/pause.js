@@ -18,7 +18,7 @@ module.exports = {
     if (!vc) {
       return interaction.reply({
         content: `You need to be in a voice channel to pause music ❌`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -44,7 +44,7 @@ module.exports = {
       }
       return interaction.reply({
         content: "⚠️ Could not pause right now.",
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
   },

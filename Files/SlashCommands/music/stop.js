@@ -14,7 +14,7 @@ module.exports = {
     if (!vc) {
       return interaction.reply({
         content: `You need to be in a voice channel to stop the music. ❌`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -22,7 +22,7 @@ module.exports = {
     if (!queue) {
       return interaction.reply({
         content: `There is no music playing! ❌`,
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -40,7 +40,7 @@ module.exports = {
       } else {
         await interaction.reply({
           content: `There was an error trying to stop the music ❌`,
-          ephemeral: true,
+          flags: MessageFlags.Ephemeral,
         });
       }
     }

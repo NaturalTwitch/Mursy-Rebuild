@@ -14,7 +14,7 @@ module.exports = {
         if (!vc) {
             return interaction.reply({
                 content: `You need to be in a voice channel to change the bot's volume`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
 
@@ -23,7 +23,7 @@ module.exports = {
         if (!queue) {
             return interaction.reply({
                 content: `${interaction.user}, There is no music currently in queue`,
-                ephemeral: true,
+                flags: MessageFlags.Ephemeral,
             });
         }
         if (vol < 1 || vol > 100) return interaction.reply({
@@ -31,7 +31,7 @@ module.exports = {
         })
         if (!vol || vol === NaN) return interaction.reply({
             content: `${interaction.user}, Please ensure that you entered a vaild Number.`,
-            ephemeral: true,
+            flags: MessageFlags.Ephemeral,
         })
 
         client.db.query(`
@@ -40,7 +40,7 @@ module.exports = {
             ON CONFLICT (guild_id)
             DO UPDATE SET volume_percentage = $2;
         `, [interaction.guild.id, vol]);
-        
+
         const success = queue.setVolume(vol);
 
         interaction.reply({
