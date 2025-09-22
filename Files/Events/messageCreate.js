@@ -33,11 +33,11 @@ module.exports = {
       client.commands.find((a) => a.aliases && a.aliases.includes(cmd));
 
     //Locks Folder Bot Owner to NaturalTwitch
-    if (
-      command.catergory === "botowner" &&
-      message.author.id !== "513413045251342336"
-    )
-      return;
+    // if (
+    //   command.catergory === "botowner" &&
+    //   message.author.id !== "513413045251342336"
+    // )
+    //   return;
 
     try {
       command.execute(client, message, cmd, args, Discord);
