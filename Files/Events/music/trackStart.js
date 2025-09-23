@@ -7,7 +7,7 @@ module.exports = {
     const channel = queue.textChannelId && guild.channels.cache.get(queue.textChannelId);
 
     const embed = new EmbedBuilder()
-      .setTitle(`🎶Now Playing🎶`)
+      .setTitle(`🎶 Mursy's Jukebox 🎶`)
       .setColor(0x00ae86)
       .setTimestamp();
 

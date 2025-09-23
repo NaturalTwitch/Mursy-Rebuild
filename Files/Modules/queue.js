@@ -1,3 +1,20 @@
+// <---              Events               --->
+// | trackStart, disconnected, playerError,  |
+// | trackEnd, connected, trackAdd, stopped, |
+// | volumeChange, queueEmpty, progress      |
+// <----------------------------------------->
+
+// <---                  Functions                           --->
+// | getCurrentTrack(), getNowPlaying(), enqueue(track),        |
+// | skip(), pause(), resume(), stop(), setVolume(percent),     |
+// | previousTrack(), clear(), setLoop(mode)                    |
+// <------------------------------------------------------------>
+
+// Everything you need to know in order to operate the command files is Listed Above this line               \\
+// You need not to change anything under this line unless adding something new, this works do not fuck with it \\
+
+const LoopMode = { OFF: 0, TRACK: 1, QUEUE: 2 };
+
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -74,7 +91,9 @@ class GuildQueue {
     this.connection = null;
     this.player = createAudioPlayer();
     this.tracks = [];
-    this.loop = false;
+    this.loopMode = LoopMode.OFF;
+    this.lastTrack = null;
+    this.nextInLine = null;
     this.current = null;
     this.killer = null;
     this.resource = null;
@@ -97,11 +116,18 @@ class GuildQueue {
 
     this.player.on(AudioPlayerStatus.Idle, () => {
       const ended = this.current;
+      this.lastTrack = this.current;
       this.killer?.();
       this.killer = null;
       this._stopProgressTicker();
       this.current = null;
       if (ended) {
+
+        if (this.loopMode === LoopMode.TRACK) {
+          this.tracks.unshift(ended);
+        } else if (this.loopMode === LoopMode.QUEUE) {
+          this.tracks.push(ended);
+        }
         music.emit(MUSIC_EVENTS.TRACK_END, {
           guild: this.guild,
           track: ended,
@@ -251,6 +277,7 @@ class GuildQueue {
 
   stop() {
     this.tracks = [];
+    this.loopMode = LoopMode.OFF;
     this.player.stop(true);
     this.killer?.();
     this.killer = null;
@@ -272,6 +299,28 @@ class GuildQueue {
   }
 
   _playNext() {
+    if (this.nextInLine) { // If we went back to the previous song this should set the queue back to normal. NT 09/23/2025
+      const next = this.nextInLine;
+      this.current = next;
+
+      const { stream, kill } = next.createAudioStream();
+      this.killer = kill;
+
+      const resource = createAudioResource(stream, {
+        inputType: StreamType.OggOpus,
+        inlineVolume: true,
+      });
+      this.resource = resource;
+      if (this.resource.volume)
+        this.resource.volume.setVolume(this.defaultVolume);
+
+      this.nextInLine = null; // This should make sure we aren't constantly looping the same song for the end of time lol NT 09/23/2025
+      this.player.play(resource);
+
+
+      return;
+    }
+
     const next = this.tracks.shift();
     if (!next) {
       music.emit(MUSIC_EVENTS.QUEUE_EMPTY, { guild: this.guild, queue: this });
@@ -294,6 +343,29 @@ class GuildQueue {
     this.player.play(resource);
   }
 
+  previousTrack() {
+    if (!this.lastTrack) return false; // If there is no last track, do nothing NT 09/23/2025
+
+
+    const last = this.lastTrack; // Grabs Last Song playing set in idleStatus NT 09/23/2025
+    this.nextInLine = this.current; // Makes sures to set the currently playing song as the Next In Line so it rebuilds the queue in proper order NT 09/23/2025
+
+    this.current = last; // changes this current into the previously playing song so we get the right info NT 09/23/2025
+
+    const { stream, kill } = last.createAudioStream();
+    this.killer = kill;
+
+    const resource = createAudioResource(stream, {
+      inputType: StreamType.OggOpus,
+      inlineVolume: true,
+    });
+    this.resource = resource;
+    if (this.resource.volume)
+      this.resource.volume.setVolume(this.defaultVolume);
+
+    this.player.play(resource);
+
+  }
 
   clear() {
     const removed = this.tracks.length;
@@ -301,10 +373,9 @@ class GuildQueue {
     return removed;
   }
 
-  setLoop(boolean) {
-    this.loop = boolean;
-    console.log(this.tracks);
-    return this.loop;
+  setLoop(mode) {
+    const m = (typeof mode === "string") ? ({ off: LoopMode.OFF, track: LoopMode.TRACK, queue: LoopMode.QUEUE }[mode.toLowerCase()] ?? LoopMode.OFF) : (Object.values(LoopMode).includes(mode) ? mode : LoopMode.OFF);
+    this.loopMode = m;
   }
 
   _startProgressTicker() {
