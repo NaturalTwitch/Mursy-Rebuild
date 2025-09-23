@@ -1,4 +1,3 @@
-// commands/music/play.js
 const { SlashCommandBuilder } = require("discord.js");
 const ytSearch = require("yt-search");
 const { Track } = require("../../Modules/track.js");
@@ -14,7 +13,7 @@ module.exports = {
           .setName("query")
           .setDescription("Song name or YouTube URL")
           .setRequired(true)
-          .setAutocomplete(true) // 👈 enable autocomplete
+          .setAutocomplete(true)
     ),
 
   /**
@@ -55,6 +54,7 @@ module.exports = {
   async execute(interaction, client) {
     const query = interaction.options.getString("query", true);
 
+
     const vc = interaction.member?.voice?.channel;
     if (!vc) {
       return interaction.reply({
@@ -64,6 +64,8 @@ module.exports = {
     }
 
     const queue = getQueue(interaction.guild);
+    queue.setTextChannel(interaction.channel.id);
+
     if (!queue) {
       return interaction.reply({
         content: `Music system isn’t initialized for this guild yet. ❌`,

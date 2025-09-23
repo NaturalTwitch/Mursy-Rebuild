@@ -1,4 +1,3 @@
-// Files/Modules/queue.js
 const {
   joinVoiceChannel,
   createAudioPlayer,
@@ -41,7 +40,7 @@ function youtubeIdFromUrl(u = "") {
       const m = url.pathname.match(/\/shorts\/([^/?#]+)/);
       if (m) return m[1];
     }
-  } catch {}
+  } catch { }
   return null;
 }
 
@@ -75,6 +74,7 @@ class GuildQueue {
     this.connection = null;
     this.player = createAudioPlayer();
     this.tracks = [];
+    this.loop = false;
     this.current = null;
     this.killer = null;
     this.resource = null;
@@ -159,7 +159,7 @@ class GuildQueue {
   _destroyConnection() {
     try {
       this.connection?.destroy();
-    } catch {}
+    } catch { }
     if (this.connection) {
       music.emit(MUSIC_EVENTS.DISCONNECTED, { guild: this.guild, queue: this });
     }
@@ -294,6 +294,19 @@ class GuildQueue {
     this.player.play(resource);
   }
 
+
+  clear() {
+    const removed = this.tracks.length;
+    this.tracks = [];
+    return removed;
+  }
+
+  setLoop(boolean) {
+    this.loop = boolean;
+    console.log(this.tracks);
+    return this.loop;
+  }
+
   _startProgressTicker() {
     this._stopProgressTicker(); // avoid duplicates
     this._progressInterval = setInterval(() => {
@@ -314,6 +327,8 @@ class GuildQueue {
     }
   }
 }
+
+
 
 const queues = new Map();
 function getQueue(guild) {

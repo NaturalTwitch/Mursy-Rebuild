@@ -27,6 +27,8 @@ module.exports = {
 
     const queue = getQueue(message.guild);
 
+    queue.setTextChannel(message.channel.id);
+
     if (!queue) {
       const join = joinVoiceChannel({
         channelId: voiceChannel.id,

@@ -1,5 +1,5 @@
 // commands/music/queue.js
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 const { getQueue } = require("../../Modules/queue.js"); // adjust path if needed
 
 // small helpers (match those in your queue for formatting)

@@ -1,16 +1,23 @@
+const { getQueue } = require("../../Modules/queue.js");
+
 module.exports = {
     name: 'queueclear',
-    aliases: [],
+    aliases: ['qc'],
     utilisation: '{prefix}queueclear',
     description: 'Clear current Music Queue',
     voiceChannel: true,
 
     async execute(client, message, cmd, args, Discord) {
-        const queue = client.player.nodes.get(message.guild.id);
+        const queue = getQueue(message.guild)
+        
 
-        if (!queue || !queue.node.isPlaying()) return message.channel.send(`${message.author}, No music currently playing!`);
-        await queue.tracks.clear();
+        if (!queue) return message.channel.send(`${message.author}, No music currently playing!`);
+        const now = queue.getNowPlaying(24);
+        
 
-        message.channel.send(`The queue has just been cleared!`)
+        const removed = queue.clear();
+        return message.channel.send(
+            `${message.author}, Cleared the queue! Removed ${removed} songs.`
+        );
     }
 }
